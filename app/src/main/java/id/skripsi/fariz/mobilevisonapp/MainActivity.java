@@ -1,5 +1,6 @@
 package id.skripsi.fariz.mobilevisonapp;
 
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -24,6 +25,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -42,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
 
         cameraView = (SurfaceView) findViewById(R.id.surface_view);
         textBlockContent = (TextView) findViewById(R.id.text_value);
+
+        final TinyDB tinydb = new TinyDB(getApplicationContext());
 
         TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
         if (!textRecognizer.isOperational()) {
@@ -91,30 +98,47 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             final StringBuilder value = new StringBuilder();
-                            final String[] str = new String[1];
-                            for (int i = 0; i < items.size(); ++i) {
-                                final TextBlock item = items.valueAt(i);
-                                Log.d("TAG textblock", item.getValue());
-                                getTranslate(item.getValue(), new VolleyCallback(){
-                                    @Override
-                                    public void onSuccess(String result){
-                                        Log.d("TAG-result", result);
-                                        str[0] = result;
-                                    }
-                                });
-                                value.append(str[0]);
-                                value.append("\n");
-                                Log.d("TAG textblock-append", str[0]);
 
-                            }
-                            //update text block content to TextView
-                            Log.d("TAG textblock-after ", value.toString());
-                            textBlockContent.setText(value.toString());
+                                    for (int i = 0; i < items.size(); ++i) {
+                                        final TextBlock item = items.valueAt(i);
+                                        Log.d("TAG textblock", item.getValue());
+                                        final int j = i;
+
+                                                getTranslate(item.getValue(), new VolleyCallback(){
+                                                    @Override
+                                                    public void onSuccess(String result){
+                                                        tinydb.putString("teks"+j, result);
+
+                                                        Log.d("TAG-onSuccess-"+j, result);
+                                                    }
+
+                                                    @Override
+                                                    public void onFailure(String resultFail){
+                                                        tinydb.putString("teks"+j, resultFail);
+
+                                                        Log.d("TAG-onFailure-"+j, resultFail);
+                                                    }
+                                                });
+
+                                        value.append(tinydb.getString("teks"+j));
+                                        value.append("\n");
+                                        Log.d("TAG textblock-append", value.toString());
+
+
+                                    }
+
+                                    //update text block content to TextView
+                                    Log.d("TAG textblock-after ", value.toString());
+                                    textBlockContent.setText(value.toString());
+
+
                         }
                     });
                 }
 
             }
+
+            //end receive detector
         });
 
 
@@ -150,11 +174,12 @@ public class MainActivity extends AppCompatActivity {
 
 
                         } catch (JSONException e) {
-                            callback.onSuccess(string);
+                            /*callback.onSuccess(string);*/
+                            callback.onFailure(string);
                             e.printStackTrace();
-                            Toast.makeText(AppController.getInstance().getApplicationContext(),
+                            /*Toast.makeText(AppController.getInstance().getApplicationContext(),
                                     "Error: " + e.getMessage(),
-                                    Toast.LENGTH_LONG).show();
+                                    Toast.LENGTH_LONG).show();*/
                         }
 
                     }
@@ -162,10 +187,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onErrorResponse(VolleyError error) {
 
-                callback.onSuccess(string);
+                /*callback.onSuccess(string);*/
+                callback.onFailure(string);
                 VolleyLog.d(TAG, "Error: " + error.getMessage());
-                Toast.makeText(AppController.getInstance().getApplicationContext(),
-                        error.getMessage(), Toast.LENGTH_SHORT).show();
+                /*Toast.makeText(AppController.getInstance().getApplicationContext(),
+                        error.getMessage(), Toast.LENGTH_SHORT).show();*/
             }
         });
 
@@ -175,6 +201,7 @@ public class MainActivity extends AppCompatActivity {
 
     public interface VolleyCallback{
         void onSuccess(String result);
+        void onFailure(String string);
     }
 
 }
