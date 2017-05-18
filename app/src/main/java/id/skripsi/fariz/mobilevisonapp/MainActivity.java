@@ -1,12 +1,20 @@
 package id.skripsi.fariz.mobilevisonapp;
 
+import android.content.Context;
+import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.os.Build;
 import android.os.Handler;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private SurfaceView cameraView;
     private TextView textBlockContent;
     private CameraSource cameraSource;
-
+    private RelativeLayout relativeLayout;
 
     private static String TAG = MainActivity.class.getSimpleName();
 
@@ -47,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
 
         cameraView = (SurfaceView) findViewById(R.id.surface_view);
         textBlockContent = (TextView) findViewById(R.id.text_value);
+        relativeLayout = (RelativeLayout) findViewById(R.id.relativeLayout);
 
         final TinyDB tinydb = new TinyDB(getApplicationContext());
 
@@ -82,6 +91,23 @@ public class MainActivity extends AppCompatActivity {
                 cameraSource.stop();
             }
         });
+
+        if(!isNetworkConnected()){
+            Snackbar snackbar = Snackbar
+                    .make(relativeLayout, "Koneksi Internet Terputus", Snackbar.LENGTH_INDEFINITE)
+                    .setAction("KELUAR", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN){
+                                finishAffinity();
+                            } else{
+                                finish();
+                            }
+                        }
+                    });
+
+            snackbar.show();
+        }
 
         textRecognizer.setProcessor(new Detector.Processor<TextBlock>() {
             @Override
@@ -202,6 +228,12 @@ public class MainActivity extends AppCompatActivity {
     public interface VolleyCallback{
         void onSuccess(String result);
         void onFailure(String string);
+    }
+
+    private boolean isNetworkConnected() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        return cm.getActiveNetworkInfo() != null;
     }
 
 }
